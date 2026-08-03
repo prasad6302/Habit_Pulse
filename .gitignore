@@ -1,0 +1,53 @@
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+backend/.env
+frontend/.env
+
+# Virtual environments
+venv/
+env/
+ENV/
+backend/venv/
+backend/env/
+
+# Python bytecode & cache
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local data stores & backups (contains personal user data)
+backend/data_store.json
+backend/data_store_backup_*.json
+*.json.bak
+
+# Frontend dependencies & build output
+node_modules/
+frontend/node_modules/
+dist/
+dist-ssr/
+frontend/dist/
+build/
+
+# Operating system files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE & Editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Temporary & system logs
+*.log
+logs/

@@ -1,0 +1,101 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Light Mode (Default) */
+  --bg-gradient: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #e2e8f0 100%);
+  --background: 210 40% 98%;
+  --foreground: 222 47% 11%;
+  
+  --card: 0 0% 100%;
+  --card-border: rgba(226, 232, 240, 0.8);
+  --card-glow: 0 8px 32px 0 rgba(99, 102, 241, 0.04);
+  
+  /* Glass Core */
+  --glass-bg: rgba(255, 255, 255, 0.9);
+  --glass-border: rgba(226, 232, 240, 0.8);
+  --glass-highlight: rgba(255, 255, 255, 0.8);
+
+  /* Gradients */
+  --gradient-streak: linear-gradient(135deg, #818cf8 0%, #3b82f6 50%, #0d9488 100%);
+  --gradient-purple-blue: linear-gradient(135deg, #a855f7 0%, #6366f1 100%);
+  --gradient-blue-teal: linear-gradient(135deg, #3b82f6 0%, #0d9488 100%);
+  --gradient-flame: linear-gradient(135deg, #f97316 0%, #ef4444 100%);
+
+  /* Accents */
+  --primary: 243 75% 59%;
+  --secondary: 190 90% 40%;
+  --accent: 220 90% 50%;
+  --muted: 215 16% 47%;
+}
+
+@layer base {
+  * {
+    border-color: rgba(226, 232, 240, 0.8);
+  }
+  body {
+    background: #f8fafc;
+    background-attachment: fixed;
+    color: #0f172a;
+    @apply font-body min-h-screen overflow-x-hidden;
+  }
+}
+
+/* Glassmorphism Classes */
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25);
+}
+
+.glass-panel-light {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.glass-input {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--glass-border);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.light .glass-input {
+  background: rgba(255, 255, 255, 0.6);
+}
+.glass-input:focus {
+  border-color: hsl(var(--primary) / 0.5);
+  box-shadow: 0 0 0 2px hsl(var(--primary) / 0.15);
+  outline: none;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(124, 58, 237, 0.3);
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(124, 58, 237, 0.5);
+}
+
+/* Prefers Reduced Motion CSS Fallback */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
