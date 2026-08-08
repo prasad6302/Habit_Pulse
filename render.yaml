@@ -1,0 +1,45 @@
+services:
+  # 1. Backend Web Service (FastAPI)
+  - type: web
+    name: habit-pulse-backend
+    env: python
+    repo: https://github.com/prasad6302/Habit_Pulse
+    branch: main
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_URL
+        sync: false # User will provide their existing Neon connection string
+      - key: JWT_SECRET_KEY
+        generateValue: true # Render will automatically generate a secure hex key
+      - key: FRONTEND_URL
+        fromService:
+          name: habit-pulse-frontend
+          type: static
+          property: url
+      - key: CORS_ORIGINS_CSV
+        fromService:
+          name: habit-pulse-frontend
+          type: static
+          property: url
+      - key: RESEND_API_KEY
+        sync: false # User will provide their Resend API key
+      - key: EMAIL_FROM
+        value: onboarding@resend.dev # Can be customized later
+      - key: EMAIL_REPLY_TO
+        sync: false
+      - key: VAPID_CLAIMS_EMAIL
+        value: mailto:habit-tracker-alerts@example.com
+
+  # 2. Frontend Static Site (React/Vite)
+  - type: static
+    name: habit-pulse-frontend
+    repo: https://github.com/prasad6302/Habit_Pulse
+    branch: main
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    publishDir: dist
+    envVars:
+      - key: VITE_API_URL
+        value: ${habit-pulse-backend.url}/api/v1 # Interpolates the backend URL
