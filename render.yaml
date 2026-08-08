@@ -14,15 +14,9 @@ services:
       - key: JWT_SECRET_KEY
         generateValue: true # Render will automatically generate a secure hex key
       - key: FRONTEND_URL
-        fromService:
-          name: habit-pulse-frontend
-          type: web
-          property: url
+        value: ${habit-pulse-frontend.url}
       - key: CORS_ORIGINS_CSV
-        fromService:
-          name: habit-pulse-frontend
-          type: web
-          property: url
+        value: ${habit-pulse-frontend.url}
       - key: RESEND_API_KEY
         sync: false # User will provide their Resend API key
       - key: EMAIL_FROM
