@@ -3,43 +3,37 @@ services:
   - type: web
     name: habit-pulse-backend
     env: python
+    plan: free # Explicitly force Render's $0 free tier
     repo: https://github.com/prasad6302/Habit_Pulse
     branch: main
     rootDir: backend
     buildCommand: pip install -r requirements.txt
+    # NOTE: preDeployCommand is a paid-tier feature on Render.
+    # On the free tier, migrations must be run manually from your local machine
+    # using 'alembic upgrade head' against Neon before pushing schema changes.
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: DATABASE_URL
-        sync: false # User will provide their existing Neon connection string
+        sync: false # Required: Neon Postgres connection URL
       - key: JWT_SECRET_KEY
-        generateValue: true # Render will automatically generate a secure hex key
-      - key: FRONTEND_URL
-        value: ${habit-pulse-frontend.url}
-      - key: CORS_ORIGINS_CSV
-        value: ${habit-pulse-frontend.url}
+        sync: false # Required: JWT signature secret
       - key: RESEND_API_KEY
-        sync: false # User will provide their Resend API key
+        sync: false # Required: Resend API Key
+      - key: DISPATCH_SECRET
+        sync: false # Required: Trigger secret key for scheduled reminders
+      - key: FRONTEND_URL
+        sync: false # Required: Real frontend URL
+      - key: CORS_ORIGINS_CSV
+        sync: false # Required: CORS origin domains (comma-separated)
       - key: EMAIL_FROM
-        value: onboarding@resend.dev # Can be customized later
+        sync: false # Required: Sender email address
       - key: EMAIL_REPLY_TO
-        sync: false
+        sync: false # Required: Reply-to email address
       - key: VAPID_CLAIMS_EMAIL
-        value: mailto:habit-tracker-alerts@example.com
-
-  # 2. Frontend Static Site (React/Vite)
-  - type: web
-    name: habit-pulse-frontend
-    env: static
-    repo: https://github.com/prasad6302/Habit_Pulse
-    branch: main
-    rootDir: frontend
-    buildCommand: npm install && npm run build
-    staticPublishPath: dist
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
-    envVars:
-      - key: VITE_API_URL
-        value: ${habit-pulse-backend.url}/api/v1 # Interpolates the backend URL
-
+        sync: false # Optional: mailto link for push alerts
+      - key: VAPID_PUBLIC_KEY
+        sync: false # Optional: VAPID public key
+      - key: VAPID_PRIVATE_KEY
+        sync: false # Optional: VAPID private key
+      - key: DATA_FILE_PATH
+        value: ./data_store.json # Fallback location for local json file store

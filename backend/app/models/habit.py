@@ -23,6 +23,7 @@ class Habit(BaseModel):
     goal_streak: Optional[int] = None
     goal_completions_per_month: Optional[int] = None
     sort_order: int = 0
+    last_notified_at: Optional[datetime] = None
 
 class HabitCreate(BaseModel):
     name: str = Field(..., min_length=1)
@@ -48,6 +49,7 @@ class HabitUpdate(BaseModel):
     goal_streak: Optional[int] = None
     goal_completions_per_month: Optional[int] = None
     sort_order: Optional[int] = None
+    last_notified_at: Optional[datetime] = None
 
 class HabitReorder(BaseModel):
     habit_ids: List[str]

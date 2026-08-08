@@ -65,7 +65,8 @@ def habit_db_to_pydantic(db_obj: HabitDB) -> Habit:
         created_at=db_obj.created_at,
         goal_streak=db_obj.goal_streak,
         goal_completions_per_month=db_obj.goal_completions_per_month,
-        sort_order=db_obj.sort_order
+        sort_order=db_obj.sort_order,
+        last_notified_at=db_obj.last_notified_at
     )
 
 def checkin_db_to_pydantic(db_obj: CheckInDB) -> CheckIn:
@@ -182,7 +183,8 @@ class PostgresHabitRepository(IHabitRepository):
             created_at=habit.created_at,
             goal_streak=habit.goal_streak,
             goal_completions_per_month=habit.goal_completions_per_month,
-            sort_order=habit.sort_order
+            sort_order=habit.sort_order,
+            last_notified_at=habit.last_notified_at
         )
         self.session.add(db_obj)
         await self.session.commit()

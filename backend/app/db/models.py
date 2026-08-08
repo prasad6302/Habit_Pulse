@@ -58,6 +58,7 @@ class HabitDB(Base):
     goal_streak = Column(Integer, nullable=True)
     goal_completions_per_month = Column(Integer, nullable=True)
     sort_order = Column(Integer, default=0, nullable=False)
+    last_notified_at = Column(DateTime(timezone=True), nullable=True)
 
     user = relationship("UserDB", back_populates="habits")
     checkins = relationship("CheckInDB", back_populates="habit", cascade="all, delete-orphan")

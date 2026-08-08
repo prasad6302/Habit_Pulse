@@ -1,15 +1,21 @@
 import uuid
 from datetime import datetime, timezone, timedelta
 from typing import List, Dict, Any, Optional
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Header
 from pywebpush import WebPushException
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
+from sqlalchemy.orm import joinedload
+import pytz
 
 from app.core.config import settings
+from app.db.database import get_async_session
 from app.core.deps import (
     get_current_user,
     get_notification_repository,
     get_habit_repository,
-    get_checkin_repository
+    get_checkin_repository,
+    get_json_store
 )
 from app.repositories.base import INotificationRepository, IHabitRepository, ICheckInRepository
 from app.models.user import User, VapidSubscription
@@ -17,6 +23,8 @@ from app.models.notification import NotificationLogResponse, TestPushMessage, Sc
 from app.models.checkin import CheckIn
 from app.services.webpush_service import WebPushService
 from app.services.streak_service import StreakService
+from app.services.email_service import EmailService
+from app.services.email_templates import get_habit_reminder_template
 
 router = APIRouter(prefix="/notifications", tags=["notifications"])
 
@@ -179,19 +187,246 @@ async def quick_action_snooze(
     if not target_notif:
         raise HTTPException(status_code=404, detail="Scheduled notification not found")
         
-    # Update status of original notification
-    await notification_repo.update_scheduled(notification_id, {"status": "sent"}) # Or marked processed
-    
-    # Create new scheduled notification for 15 minutes in the future
-    snooze_time = datetime.now(timezone.utc) + timedelta(minutes=15)
-    snoozed_notif = ScheduledNotification(
-        id=str(uuid.uuid4()),
-        user_id=current_user.id,
-        habit_id=target_notif.habit_id,
-        scheduled_time=snooze_time,
-        notification_type="reminder",
-        status="pending"
-    )
     await notification_repo.create_scheduled(snoozed_notif)
     
     return {"status": "success", "message": "Notification snoozed for 15 minutes."}
+
+
+@router.post("/dispatch", status_code=status.HTTP_200_OK)
+async def dispatch_reminders(
+    x_dispatch_key: Optional[str] = Header(None, alias="X-Dispatch-Key"),
+    session: Optional[AsyncSession] = Depends(get_async_session) if settings.DATABASE_URL else None,
+    habit_repo: IHabitRepository = Depends(get_habit_repository),
+    notification_repo: INotificationRepository = Depends(get_notification_repository)
+):
+    """
+    Secure cron trigger to search and dispatch pending habit reminders.
+    Uses efficient bulk joinedload queries for PostgreSQL to avoid N+1 queries.
+    """
+    if not x_dispatch_key or x_dispatch_key != settings.DISPATCH_SECRET:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Unauthorized: Invalid dispatch key"
+        )
+
+    dispatched_count = 0
+    utc_now = datetime.now(timezone.utc)
+
+    if settings.DATABASE_URL and session:
+        from app.db.models import HabitDB, UserDB
+
+        # Fetch active habits and their owners in a single query with joinedload (avoiding N+1 queries!)
+        stmt = select(HabitDB).options(joinedload(HabitDB.user)).where(
+            HabitDB.is_archived == False,
+            HabitDB.is_paused == False
+        )
+        res = await session.execute(stmt)
+        db_habits = res.scalars().all()
+
+        for db_habit in db_habits:
+            db_user = db_habit.user
+            if not db_user or not db_user.global_notifications_enabled:
+                continue
+
+            # Parse user local timezone and time
+            try:
+                tz = pytz.timezone(db_user.timezone)
+            except Exception:
+                tz = pytz.UTC
+
+            local_now = datetime.now(tz)
+            now_mins = local_now.hour * 60 + local_now.minute
+
+            # Check quiet hours (format "HH:MM")
+            is_in_quiet_hours = False
+            if db_user.quiet_hours_start and db_user.quiet_hours_end:
+                try:
+                    q_start = db_user.quiet_hours_start
+                    q_end = db_user.quiet_hours_end
+                    curr_t = local_now.strftime("%H:%M")
+                    if q_start < q_end:
+                        is_in_quiet_hours = q_start <= curr_t <= q_end
+                    else:  # crosses midnight
+                        is_in_quiet_hours = curr_t >= q_start or curr_t <= q_end
+                except Exception:
+                    pass
+
+            if is_in_quiet_hours:
+                continue
+
+            # Check reminder times matches (±5 minutes tolerance)
+            time_matches = False
+            reminder_list = db_habit.reminder_times or []
+            for r_time in reminder_list:
+                try:
+                    r_hour, r_min = map(int, r_time.split(":"))
+                    rem_mins = r_hour * 60 + r_min
+                    diff = min(abs(now_mins - rem_mins), 1440 - abs(now_mins - rem_mins))
+                    if diff <= 5:
+                        time_matches = True
+                        break
+                except Exception:
+                    continue
+
+            if not time_matches:
+                continue
+
+            # Idempotency check:
+            # Skip if already notified within the last 10 minutes (600 seconds)
+            if db_habit.last_notified_at:
+                last_notified = db_habit.last_notified_at
+                if last_notified.tzinfo is None:
+                    last_notified = last_notified.replace(tzinfo=timezone.utc)
+                if (utc_now - last_notified).total_seconds() < 600:
+                    continue
+
+            # Frequency check
+            if db_habit.frequency:
+                freq_type = db_habit.frequency.get("type")
+                if freq_type == "weekly":
+                    days_of_week = db_habit.frequency.get("days_of_week") or []
+                    if local_now.weekday() not in days_of_week:
+                        continue
+
+            # All checks passed! Send the reminder email!
+            subject, html_body = get_habit_reminder_template(db_habit.name)
+            success = EmailService.send_email(
+                to=db_user.email,
+                subject=subject,
+                html_body=html_body
+            )
+            status_str = "sent" if success else "failed"
+
+            # Update last_notified_at in DB
+            db_habit.last_notified_at = utc_now
+
+            # Log the notification
+            await notification_repo.log_notification(
+                NotificationLog(
+                    id=str(uuid.uuid4()),
+                    user_id=db_user.id,
+                    habit_id=db_habit.id,
+                    title=subject,
+                    body=f"Reminder email for habit '{db_habit.name}'",
+                    channel="email",
+                    sent_at=utc_now,
+                    status=status_str
+                )
+            )
+            dispatched_count += 1
+
+        await session.commit()
+
+    else:
+        # JSON Repository fallback (e.g. local testing without DB)
+        store = get_json_store()
+        user_ids = list(store.data.get("users", {}).keys())
+
+        for u_id in user_ids:
+            user_data = store.data["users"].get(u_id)
+            if not user_data or not user_data.get("global_notifications_enabled", True):
+                continue
+
+            user_habits = []
+            for habit_data in store.data["habits"].values():
+                if (
+                    habit_data.get("user_id") == u_id
+                    and not habit_data.get("is_archived", False)
+                    and not habit_data.get("is_paused", False)
+                ):
+                    user_habits.append(habit_data)
+
+            if not user_habits:
+                continue
+
+            user_tz_str = user_data.get("timezone", "UTC")
+            try:
+                tz = pytz.timezone(user_tz_str)
+            except Exception:
+                tz = pytz.UTC
+
+            local_now = datetime.now(tz)
+            now_mins = local_now.hour * 60 + local_now.minute
+
+            # Check quiet hours
+            is_in_quiet_hours = False
+            q_start = user_data.get("quiet_hours_start")
+            q_end = user_data.get("quiet_hours_end")
+            if q_start and q_end:
+                try:
+                    curr_t = local_now.strftime("%H:%M")
+                    if q_start < q_end:
+                        is_in_quiet_hours = q_start <= curr_t <= q_end
+                    else:
+                        is_in_quiet_hours = curr_t >= q_start or curr_t <= q_end
+                except Exception:
+                    pass
+
+            if is_in_quiet_hours:
+                continue
+
+            for h_data in user_habits:
+                time_matches = False
+                reminder_list = h_data.get("reminder_times") or []
+                for r_time in reminder_list:
+                    try:
+                        r_hour, r_min = map(int, r_time.split(":"))
+                        rem_mins = r_hour * 60 + r_min
+                        diff = min(abs(now_mins - rem_mins), 1440 - abs(now_mins - rem_mins))
+                        if diff <= 5:
+                            time_matches = True
+                            break
+                    except Exception:
+                        continue
+
+                if not time_matches:
+                    continue
+
+                last_notified_str = h_data.get("last_notified_at")
+                if last_notified_str:
+                    try:
+                        last_notified = datetime.fromisoformat(last_notified_str)
+                        if last_notified.tzinfo is None:
+                            last_notified = last_notified.replace(tzinfo=timezone.utc)
+                        if (utc_now - last_notified).total_seconds() < 600:
+                            continue
+                    except Exception:
+                        pass
+
+                freq = h_data.get("frequency") or {}
+                if freq.get("type") == "weekly":
+                    days_of_week = freq.get("days_of_week") or []
+                    if local_now.weekday() not in days_of_week:
+                        continue
+
+                subject, html_body = get_habit_reminder_template(h_data.get("name", ""))
+                success = EmailService.send_email(
+                    to=user_data.get("email", ""),
+                    subject=subject,
+                    html_body=html_body
+                )
+                status_str = "sent" if success else "failed"
+
+                h_data["last_notified_at"] = utc_now.isoformat()
+
+                await notification_repo.log_notification(
+                    NotificationLog(
+                        id=str(uuid.uuid4()),
+                        user_id=u_id,
+                        habit_id=h_data.get("id"),
+                        title=subject,
+                        body=f"Reminder email for habit '{h_data.get('name')}'",
+                        channel="email",
+                        sent_at=utc_now,
+                        status=status_str
+                    )
+                )
+                dispatched_count += 1
+
+        await store._save_to_disk()
+
+    return {
+        "status": "success",
+        "message": f"Dispatch completed successfully. Sent {dispatched_count} reminders."
+    }
+
