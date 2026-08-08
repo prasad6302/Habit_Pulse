@@ -16,12 +16,12 @@ services:
       - key: FRONTEND_URL
         fromService:
           name: habit-pulse-frontend
-          type: static
+          type: web
           property: url
       - key: CORS_ORIGINS_CSV
         fromService:
           name: habit-pulse-frontend
-          type: static
+          type: web
           property: url
       - key: RESEND_API_KEY
         sync: false # User will provide their Resend API key
@@ -33,13 +33,19 @@ services:
         value: mailto:habit-tracker-alerts@example.com
 
   # 2. Frontend Static Site (React/Vite)
-  - type: static
+  - type: web
     name: habit-pulse-frontend
+    env: static
     repo: https://github.com/prasad6302/Habit_Pulse
     branch: main
     rootDir: frontend
     buildCommand: npm install && npm run build
-    publishDir: dist
+    staticPublishPath: dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
     envVars:
       - key: VITE_API_URL
         value: ${habit-pulse-backend.url}/api/v1 # Interpolates the backend URL
+
