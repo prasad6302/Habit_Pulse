@@ -37,3 +37,16 @@ services:
         sync: false # Optional: VAPID private key
       - key: DATA_FILE_PATH
         value: ./data_store.json # Fallback location for local json file store
+      - key: SMTP_HOST
+        value: smtp-relay.brevo.com
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USERNAME
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: SMTP_FROM_EMAIL
+        sync: false
+      - key: SMTP_FROM_NAME
+        sync: false
+

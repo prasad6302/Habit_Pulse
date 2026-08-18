@@ -169,7 +169,7 @@ async def forgot_password(
         token = create_reset_password_token(user.email, user.hashed_password)
         reset_url = f"{settings.FRONTEND_URL}/?reset_token={token}"
         subject, html_body = get_reset_password_template(reset_url)
-        EmailService.send_email(
+        await EmailService.send_email(
             to=user.email,
             subject=subject,
             html_body=html_body

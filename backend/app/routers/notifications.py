@@ -88,7 +88,7 @@ async def send_test_notification(
     </html>
     """
 
-    success = EmailService.send_email(
+    success = await EmailService.send_email(
         to=current_user.email,
         subject=title,
         html_body=html_content
@@ -290,7 +290,7 @@ async def dispatch_reminders(
 
             # All checks passed! Send the reminder email!
             subject, html_body = get_habit_reminder_template(db_habit.name)
-            success = EmailService.send_email(
+            success = await EmailService.send_email(
                 to=db_user.email,
                 subject=subject,
                 html_body=html_body
@@ -400,7 +400,7 @@ async def dispatch_reminders(
                         continue
 
                 subject, html_body = get_habit_reminder_template(h_data.get("name", ""))
-                success = EmailService.send_email(
+                success = await EmailService.send_email(
                     to=user_data.get("email", ""),
                     subject=subject,
                     html_body=html_body

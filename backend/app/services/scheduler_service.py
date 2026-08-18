@@ -146,7 +146,7 @@ async def _process_tick_for_users(user_ids, user_repo, habit_repo, checkin_repo,
                 # Send Email Notification immediately if not in quiet hours
                 if not is_in_quiet_hours:
                     subject, html_body = get_habit_reminder_template(habit.name)
-                    success = EmailService.send_email(
+                    success = await EmailService.send_email(
                         to=user.email,
                         subject=subject,
                         html_body=html_body
@@ -207,7 +207,7 @@ async def _process_tick_for_users(user_ids, user_repo, habit_repo, checkin_repo,
                     
                     if not is_in_quiet_hours:
                         subject, html_body = get_missed_nudge_template(habit.name)
-                        success = EmailService.send_email(
+                        success = await EmailService.send_email(
                             to=user.email,
                             subject=subject,
                             html_body=html_body
@@ -254,7 +254,7 @@ async def _process_tick_for_users(user_ids, user_repo, habit_repo, checkin_repo,
                 
                 if not is_in_quiet_hours:
                     subject, html_body = get_weekly_digest_template(total_completions_this_week)
-                    success = EmailService.send_email(
+                    success = await EmailService.send_email(
                         to=user.email,
                         subject=subject,
                         html_body=html_body

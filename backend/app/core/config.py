@@ -97,6 +97,14 @@ class Settings(BaseSettings):
     RESEND_API_KEY: Optional[str] = None
     EMAIL_FROM: str = "onboarding@resend.dev"
     EMAIL_REPLY_TO: Optional[str] = None
+
+    # SMTP Configuration (Brevo, etc.)
+    SMTP_HOST: Optional[str] = None
+    SMTP_PORT: Optional[int] = None
+    SMTP_USERNAME: Optional[str] = None
+    SMTP_PASSWORD: Optional[str] = None
+    SMTP_FROM_EMAIL: Optional[str] = None
+    SMTP_FROM_NAME: Optional[str] = None
     
     # Allowed CORS Origins
     BACKEND_CORS_ORIGINS: list[str] = [
