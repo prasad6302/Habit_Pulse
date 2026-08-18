@@ -106,6 +106,9 @@ class Settings(BaseSettings):
     SMTP_FROM_EMAIL: Optional[str] = None
     SMTP_FROM_NAME: Optional[str] = None
     
+    # Brevo Transactional REST API Key
+    BREVO_API_KEY: Optional[str] = None
+
     # Allowed CORS Origins
     BACKEND_CORS_ORIGINS: list[str] = [
         "http://localhost:5173",

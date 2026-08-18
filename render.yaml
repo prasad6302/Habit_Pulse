@@ -49,4 +49,7 @@ services:
         sync: false
       - key: SMTP_FROM_NAME
         sync: false
+      - key: BREVO_API_KEY
+        sync: false # Required for Render free tier deployment to bypass SMTP blocks
+
 
