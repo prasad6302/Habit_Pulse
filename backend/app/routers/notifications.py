@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone, timedelta
 from typing import List, Dict, Any, Optional
-from fastapi import APIRouter, Depends, HTTPException, status, Header
+from fastapi import APIRouter, Depends, HTTPException, status, Header, Query
 from pywebpush import WebPushException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -192,18 +192,20 @@ async def quick_action_snooze(
     return {"status": "success", "message": "Notification snoozed for 15 minutes."}
 
 
-@router.post("/dispatch", status_code=status.HTTP_200_OK)
+@router.api_route("/dispatch", methods=["GET", "POST"], status_code=status.HTTP_200_OK)
 async def dispatch_reminders(
     x_dispatch_key: Optional[str] = Header(None, alias="X-Dispatch-Key"),
+    secret: Optional[str] = Query(None),
     session: Optional[AsyncSession] = Depends(get_async_session) if settings.DATABASE_URL else None,
     habit_repo: IHabitRepository = Depends(get_habit_repository),
     notification_repo: INotificationRepository = Depends(get_notification_repository)
 ):
     """
     Secure cron trigger to search and dispatch pending habit reminders.
-    Uses efficient bulk joinedload queries for PostgreSQL to avoid N+1 queries.
+    Supports both X-Dispatch-Key header and ?secret= query parameter for free monitoring tools.
     """
-    if not x_dispatch_key or x_dispatch_key != settings.DISPATCH_SECRET:
+    provided_secret = x_dispatch_key or secret
+    if not provided_secret or provided_secret != settings.DISPATCH_SECRET:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Unauthorized: Invalid dispatch key"
