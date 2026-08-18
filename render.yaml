@@ -52,4 +52,21 @@ services:
       - key: BREVO_API_KEY
         sync: false # Required for Render free tier deployment to bypass SMTP blocks
 
+  # 2. Frontend Static Site (Vite React UI)
+  - type: static
+    name: habit-pulse-frontend
+    repo: https://github.com/prasad6302/Habit_Pulse
+    branch: main
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_URL
+        value: https://habit-pulse-backend.onrender.com/api/v1
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+
+
 
