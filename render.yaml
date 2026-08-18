@@ -54,7 +54,7 @@ services:
 
   # 2. Frontend Static Site (Vite React UI)
   - type: static
-    name: habit-pulse-frontend
+    name: habit-pulse-ui
     repo: https://github.com/prasad6302/Habit_Pulse
     branch: main
     rootDir: frontend
@@ -67,6 +67,7 @@ services:
       - type: rewrite
         source: /*
         destination: /index.html
+
 
 
 
