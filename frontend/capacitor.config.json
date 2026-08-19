@@ -1,0 +1,6 @@
+{
+  "appId": "com.habitpulse.app",
+  "appName": "Habit Pulse",
+  "webDir": "dist",
+  "bundledWebRuntime": false
+}

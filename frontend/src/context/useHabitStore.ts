@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { habitsService, checkinsService } from "../services/api";
+import { nativeNotificationService } from "../services/nativeNotifications";
 import type { Habit, HabitCreate, HabitUpdate, CheckInResponse } from "../services/api";
 
 interface HabitState {
@@ -37,6 +38,7 @@ export const useHabitStore = create<HabitState>((set, get) => ({
     try {
       const list = await habitsService.getAll(includeArchived);
       set({ habits: list });
+      nativeNotificationService.scheduleHabitReminders(list);
     } catch (err: any) {
       set({ error: err.response?.data?.detail || "Failed to fetch habits." });
     } finally {
