@@ -2,5 +2,9 @@
   "appId": "com.habitpulse.app",
   "appName": "Habit Pulse",
   "webDir": "dist",
-  "bundledWebRuntime": false
+  "bundledWebRuntime": false,
+  "server": {
+    "url": "https://habit-pulse.onrender.com",
+    "cleartext": false
+  }
 }
