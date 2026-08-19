@@ -34,7 +34,7 @@ if settings.DATABASE_URL or os.environ.get("DATABASE_URL"):
     db_url = get_async_db_url()
     async_engine = create_async_engine(
         db_url,
-        connect_args={"ssl": "require"},
+        connect_args={"ssl": True},
         poolclass=NullPool,
         echo=False,
         future=True,
