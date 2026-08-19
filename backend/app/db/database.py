@@ -11,7 +11,7 @@ load_dotenv(ENV_FILE)
 Base = declarative_base()
 
 def get_async_db_url() -> str:
-    url = settings.DATABASE_URL or os.environ.get("DATABASE_URL", "")
+    url = (settings.DATABASE_URL or os.environ.get("DATABASE_URL", "")).strip().strip("'").strip('"')
     if url.startswith("postgresql://"):
         url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
     elif url.startswith("postgres://"):
