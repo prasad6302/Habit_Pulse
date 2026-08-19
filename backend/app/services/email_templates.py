@@ -1,5 +1,8 @@
+from app.core.config import settings
+
 def get_habit_reminder_template(habit_name: str, user_name: str = "Habit Tracker User") -> tuple[str, str]:
     """Returns (subject, html_body) for scheduled habit reminders."""
+    app_url = settings.FRONTEND_URL
     subject = f"Time for: {habit_name}"
     html = f"""
     <!DOCTYPE html>
@@ -25,7 +28,7 @@ def get_habit_reminder_template(habit_name: str, user_name: str = "Habit Tracker
         <div class="habit-title">✨ {habit_name}</div>
         <p>Keep your momentum strong and maintain your active streak!</p>
         <div style="text-align: center;">
-          <a href="http://localhost:5174" class="btn">Check In Now ✅</a>
+          <a href="{app_url}" class="btn">Check In Now ✅</a>
         </div>
         <div class="footer">Sent with ❤️ by Habit Pulse. You can adjust your quiet hours & email preferences anytime.</div>
       </div>
@@ -36,6 +39,7 @@ def get_habit_reminder_template(habit_name: str, user_name: str = "Habit Tracker
 
 def get_missed_nudge_template(habit_name: str) -> tuple[str, str]:
     """Returns (subject, html_body) for missed check-in nudges."""
+    app_url = settings.FRONTEND_URL
     subject = "You haven't checked in today"
     html = f"""
     <!DOCTYPE html>
@@ -61,7 +65,7 @@ def get_missed_nudge_template(habit_name: str) -> tuple[str, str]:
         <div class="nudge-box">🔥 {habit_name}</div>
         <p>Take 30 seconds to complete it before midnight to save your streak!</p>
         <div style="text-align: center;">
-          <a href="http://localhost:5174" class="btn">Log Completion Now 🔥</a>
+          <a href="{app_url}" class="btn">Log Completion Now 🔥</a>
         </div>
         <div class="footer">Sent with ❤️ by Habit Pulse.</div>
       </div>
@@ -72,6 +76,7 @@ def get_missed_nudge_template(habit_name: str) -> tuple[str, str]:
 
 def get_weekly_digest_template(total_completions: int) -> tuple[str, str]:
     """Returns (subject, html_body) for Sunday weekly digests."""
+    app_url = settings.FRONTEND_URL
     subject = "Your week in review"
     html = f"""
     <!DOCTYPE html>
@@ -97,7 +102,7 @@ def get_weekly_digest_template(total_completions: int) -> tuple[str, str]:
         <div class="stat-box">🎉 {total_completions} Habit Check-Ins</div>
         <p>View full monthly analytics and streak trends on your dashboard.</p>
         <div style="text-align: center;">
-          <a href="http://localhost:5174" class="btn">View Weekly Insights 📊</a>
+          <a href="{app_url}" class="btn">View Weekly Insights 📊</a>
         </div>
         <div class="footer">Sent with ❤️ by Habit Pulse.</div>
       </div>
