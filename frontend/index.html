@@ -3,8 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#6366f1" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Aura Habit Tracker</title>
+    <title>Habit Pulse - Track Progress & Daily Rituals</title>
     <!-- Google Fonts: Outfit (Heading), Inter (Body), JetBrains Mono (Data/Timers) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,5 +15,14 @@
   <body class="bg-background text-foreground antialiased font-body selection:bg-primary/30 selection:text-white transition-colors duration-300">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then(reg => console.log('ServiceWorker registered:', reg.scope))
+            .catch(err => console.error('ServiceWorker registration failed:', err));
+        });
+      }
+    </script>
   </body>
 </html>

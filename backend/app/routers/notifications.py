@@ -299,6 +299,18 @@ async def dispatch_reminders(
             )
             status_str = "sent" if success else "failed"
 
+            # Also send VAPID Web Push Notification if user has push subscription
+            if db_user.vapid_subscription:
+                try:
+                    WebPushService.send_push_notification(
+                        subscription=db_user.vapid_subscription,
+                        payload={"title": db_habit.name, "body": "It's time for your habit!"}
+                    )
+                except WebPushException:
+                    db_user.vapid_subscription = None
+                except Exception as ex:
+                    print(f"Web push dispatch warning: {ex}")
+
             # Update last_notified_at in DB
             db_habit.last_notified_at = utc_now
 
